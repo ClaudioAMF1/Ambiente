@@ -25,6 +25,7 @@
 #   ruby     -> Ruby + Bundler + Rails
 #   php      -> PHP + Composer
 #   dotnet   -> .NET SDK
+#   zsh      -> Zsh + Starship (prompt) + Antidote (plugins) + aliases uteis
 #   all      -> todos os modulos acima
 # -----------------------------------------------------------------------------
 
@@ -42,7 +43,7 @@ section(){ echo -e "\n${GREEN}========== $* ==========${NC}\n"; }
 # ----------------------------- Verificacoes ---------------------------------
 # Ajuda funciona em qualquer contexto (inclusive root), antes das demais checagens.
 if [[ "${1:-}" == "--help" || "${1:-}" == "-h" ]]; then
-  sed -n '2,40p' "$0" | sed 's/^# \{0,1\}//'
+  sed -n '2,30p' "$0" | sed 's/^# \{0,1\}//'
   exit 0
 fi
 
@@ -245,9 +246,110 @@ install_dotnet() {
   ok ".NET configurado: $(dotnet --version 2>/dev/null || echo 'reinicie o terminal')"
 }
 
+# ----------------------------- Modulo: zsh ----------------------------------
+# Instala Zsh + Starship (prompt) + Antidote (plugins) + aliases uteis.
+install_zsh() {
+  section "ZSH - shell moderno (Starship + Antidote + aliases)"
+
+  # 1. Zsh
+  sudo apt install -y zsh
+
+  # 2. Starship (prompt rapido, escrito em Rust)
+  if ! command_exists starship; then
+    log "Instalando Starship..."
+    curl -sS https://starship.rs/install.sh | sh -s -- --yes \
+      || warn "Falha ao instalar o Starship."
+  else
+    ok "Starship ja instalado."
+  fi
+
+  # 3. Antidote (gerenciador de plugins leve e rapido)
+  local ANTIDOTE_DIR="$HOME/.antidote"
+  if [[ ! -d "$ANTIDOTE_DIR" ]]; then
+    log "Instalando Antidote (gerenciador de plugins)..."
+    git clone --depth=1 https://github.com/mattmc3/antidote.git "$ANTIDOTE_DIR" \
+      || warn "Falha ao clonar o Antidote."
+  else
+    ok "Antidote ja instalado."
+  fi
+
+  # 4. Lista de plugins essenciais
+  if [[ ! -f "$HOME/.zsh_plugins.txt" ]]; then
+    log "Criando lista de plugins (~/.zsh_plugins.txt)..."
+    cat > "$HOME/.zsh_plugins.txt" <<'PLUGINS'
+zsh-users/zsh-autosuggestions
+zsh-users/zsh-completions
+zsh-users/zsh-history-substring-search
+zdharma-continuum/fast-syntax-highlighting
+PLUGINS
+  fi
+
+  # 5. Configuracao do ~/.zshrc (bloco gerenciado, idempotente)
+  touch "$HOME/.zshrc"
+  if ! grep -q '# >>> setup-dev-completo (zsh) >>>' "$HOME/.zshrc"; then
+    log "Adicionando configuracao ao ~/.zshrc..."
+    cat >> "$HOME/.zshrc" <<'ZSHRC'
+
+# >>> setup-dev-completo (zsh) >>>
+# Antidote - carregamento de plugins
+source "$HOME/.antidote/antidote.zsh"
+antidote load "$HOME/.zsh_plugins.txt"
+
+# Historico
+HISTSIZE=10000
+SAVEHIST=10000
+HISTFILE="$HOME/.zsh_history"
+setopt SHARE_HISTORY HIST_IGNORE_DUPS HIST_IGNORE_SPACE
+
+# nvm (Node)
+export NVM_DIR="$HOME/.nvm"
+[ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
+[ -s "$NVM_DIR/bash_completion" ] && \. "$NVM_DIR/bash_completion"
+
+# PATHs de ferramentas (Go, Rust, Cargo, pipx, etc.)
+export PATH="$PATH:/usr/local/go/bin:$HOME/.cargo/bin:$HOME/.local/bin"
+[ -s "$HOME/.cargo/env" ] && \. "$HOME/.cargo/env"
+
+# Aliases uteis
+alias ll='ls -alF'
+alias la='ls -A'
+alias l='ls -CF'
+alias ..='cd ..'
+alias ...='cd ../..'
+alias cls='clear'
+alias gs='git status'
+alias ga='git add'
+alias gc='git commit'
+alias gp='git pull'
+alias gpu='git push'
+alias gco='git checkout'
+alias gl='git log --oneline --graph --decorate'
+alias d='docker'
+alias dc='docker compose'
+alias py='python3'
+alias venv='python3 -m venv .venv && source .venv/bin/activate'
+
+# Starship - prompt (mantenha por ultimo)
+eval "$(starship init zsh)"
+# <<< setup-dev-completo (zsh) <<<
+ZSHRC
+  else
+    ok "Configuracao do zsh ja presente no ~/.zshrc."
+  fi
+
+  # 6. Define o Zsh como shell padrao (sem pedir senha, via sudo)
+  if [[ "${SHELL:-}" != *zsh ]]; then
+    log "Definindo o Zsh como shell padrao..."
+    sudo chsh -s "$(command -v zsh)" "$USER" \
+      || warn "Nao foi possivel trocar o shell automaticamente. Rode: chsh -s \$(which zsh)"
+  fi
+
+  ok "Zsh configurado! Abra um novo terminal (ou rode 'zsh') para entrar no novo shell."
+}
+
 # ----------------------------- Ajuda ----------------------------------------
 show_help() {
-  sed -n '2,40p' "$0" | sed 's/^# \{0,1\}//'
+  sed -n '2,30p' "$0" | sed 's/^# \{0,1\}//'
 }
 
 # ----------------------------- Resumo final ---------------------------------
@@ -265,6 +367,8 @@ summary() {
   command_exists ruby    && printf "%-12s %s\n" "ruby"    "$(ruby --version)"
   command_exists php     && printf "%-12s %s\n" "php"     "$(php --version | head -n1)"
   command_exists dotnet  && printf "%-12s %s\n" "dotnet"  "$(dotnet --version)"
+  command_exists zsh      && printf "%-12s %s\n" "zsh"      "$(zsh --version)"
+  command_exists starship && printf "%-12s %s\n" "starship" "$(starship --version | head -n1)"
   echo
   warn "Reabra o terminal (ou rode 'source ~/.bashrc') para carregar todas as variaveis de ambiente."
 }
@@ -280,7 +384,7 @@ main() {
 
   # Sem argumentos OU 'all' => instala tudo
   if [[ $# -eq 0 || "${1:-}" == "all" ]]; then
-    modules=(base python node docker java go rust ruby php dotnet)
+    modules=(base python node docker java go rust ruby php dotnet zsh)
   fi
 
   # base eh sempre necessario primeiro
@@ -302,6 +406,7 @@ main() {
       ruby)   install_ruby   ;;
       php)    install_php    ;;
       dotnet) install_dotnet ;;
+      zsh)    install_zsh    ;;
       all)    ;; # ja tratado acima
       *) warn "Modulo desconhecido: '$m' (ignorado)" ;;
     esac

@@ -80,6 +80,7 @@ Ver a ajuda e a lista de módulos:
 | `ruby` | Ruby + Bundler + Rails |
 | `php` | PHP + Composer |
 | `dotnet` | .NET SDK |
+| `zsh` | Zsh + Starship (prompt) + Antidote (plugins) + aliases úteis |
 
 ---
 
@@ -94,3 +95,23 @@ Ver a ajuda e a lista de módulos:
   variáveis de ambiente do Go, Rust e nvm.
 - Os scripts são **idempotentes** no que é razoável: detectam o que já está
   instalado e evitam reinstalar.
+
+### Sobre o módulo `zsh`
+
+O módulo `zsh` instala um shell moderno e rápido:
+
+- **Zsh** (definido como shell padrão)
+- **Starship** — prompt rápido (em Rust) que mostra git, linguagens, etc.
+- **Antidote** — gerenciador de plugins leve
+- Plugins: `zsh-autosuggestions`, `zsh-completions`,
+  `zsh-history-substring-search`, `fast-syntax-highlighting`
+- Aliases úteis (git, docker, navegação, `venv`, etc.)
+
+```bash
+./setup-dev-completo.sh zsh
+```
+
+Depois, **abra um novo terminal** (ou rode `zsh`) para entrar no novo shell.
+As configurações ficam num bloco gerenciado no `~/.zshrc`
+(entre `# >>> setup-dev-completo (zsh) >>>` e `# <<< ... <<<`), e a lista de
+plugins em `~/.zsh_plugins.txt` — fique à vontade para editar.
