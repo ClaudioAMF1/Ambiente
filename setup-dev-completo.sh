@@ -109,6 +109,11 @@ install_node() {
     log "Instalando nvm (Node Version Manager)..."
     curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.1/install.sh | bash
   fi
+
+  # O nvm usa variaveis internas que disparam erro com 'set -u' (nounset).
+  # Desativamos -u/pipefail apenas durante o uso do nvm e restauramos depois.
+  set +u
+  set +o pipefail
   # Carrega o nvm na sessao atual
   # shellcheck disable=SC1091
   [[ -s "$NVM_DIR/nvm.sh" ]] && \. "$NVM_DIR/nvm.sh"
@@ -128,6 +133,9 @@ install_node() {
   else
     err "nvm nao carregou. Abra um novo terminal e rode o script novamente para o modulo node."
   fi
+  # Restaura as opcoes de seguranca para os demais modulos
+  set -u
+  set -o pipefail
 }
 
 # ----------------------------- Modulo: docker -------------------------------
