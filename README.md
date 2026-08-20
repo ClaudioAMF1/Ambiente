@@ -1,16 +1,21 @@
-# Configuração do Ambiente de Programação — Sistemas Operacionais (IDP 2026/1)
+# Configuração do Ambiente de Programação — IDP
 
 Este repositório contém os scripts para preparar o ambiente de desenvolvimento
-descrito no roteiro da disciplina (`so-preparacao-do-ambiente-taa-2026-01.pdf`),
-além de um script extra que instala **Python, Node.js, Docker e as linguagens e
-frameworks mais usados**.
+descrito nos roteiros das disciplinas, além de um script extra que instala
+**Python, Node.js, Docker e as linguagens e frameworks mais usados**.
+
+Disciplinas cobertas:
+
+- **Sistemas Operacionais — 2026/1** (`so-preparacao-do-ambiente-taa-2026-01.pdf`)
+- **Criptografia e Segurança — 2026/2** (`cs-preparacao-do-ambiente-2026-02.pdf`)
 
 ## Visão geral dos scripts
 
 | Arquivo | Onde executar | O que faz |
 |---|---|---|
-| `script-instala-atualiza-wsl.ps1` | **Windows** (PowerShell) | Configura o WSL para a versão 2 e instala o **Ubuntu 24.04**. |
-| `script-instalacao-dell-2026.sh` | **Ubuntu / WSL2** | Instala as ferramentas da disciplina: build-essential, **GDB**, **GEF**, NASM, Valgrind, etc. (fiel ao roteiro). |
+| `script-instala-atualiza-wsl.ps1` | **Windows** (PowerShell) | Configura o WSL para a versão 2 e instala o **Ubuntu 24.04**. Serve para as duas disciplinas. |
+| `script-instalacao-dell-2026.sh` | **Ubuntu / WSL2** | **Sistemas Operacionais 2026/1**: build-essential, **GDB**, **GEF**, NASM, Valgrind, etc. |
+| `script-instalacao-cripto-2026-02.sh` | **Ubuntu / WSL2** | **Criptografia e Segurança 2026/2**: GDB/GEF, **pwntools**, **pycryptodome**, **ROPGadget**, **one_gadget**, **Wireshark**, Burp Suite + verificação de versões. |
 | `setup-dev-completo.sh` | **Ubuntu / WSL2** | Ambiente de dev completo: Python, Node, Docker, Java, Go, Rust, Ruby, PHP, .NET e frameworks populares. |
 
 ---
@@ -28,7 +33,7 @@ powershell -executionpolicy bypass -File .\script-instala-atualiza-wsl.ps1
 Reinicie se solicitado, abra o **Ubuntu** pelo menu Iniciar e crie seu usuário e
 senha do Linux (**lembre-se da senha**).
 
-### 2. No Ubuntu (WSL) — ferramentas da disciplina
+### 2. No Ubuntu (WSL) — ferramentas de Sistemas Operacionais (2026/1)
 
 ```bash
 chmod +x script-instalacao-dell-2026.sh
@@ -45,7 +50,74 @@ source /opt/.gdbinit-gef.py
 > Caso a Internet não funcione no WSL, o próprio script ajusta o DNS para
 > `8.8.8.8` em `/etc/resolv.conf`, conforme o roteiro.
 
-### 3. No Ubuntu (WSL) — ambiente de desenvolvimento completo
+### 3. No Ubuntu (WSL) — ferramentas de Criptografia e Segurança (2026/2)
+
+```bash
+chmod +x script-instalacao-cripto-2026-02.sh
+./script-instalacao-cripto-2026-02.sh
+```
+
+Para apenas **conferir** se o ambiente já atende aos mínimos do roteiro, sem
+instalar nada:
+
+```bash
+./script-instalacao-cripto-2026-02.sh --check
+```
+
+#### Ferramentas instaladas e versões mínimas do roteiro
+
+| Ferramenta | Mínimo | Como é instalada |
+|---|---|---|
+| gcc | 13.3.0+ | `apt` (build-essential) |
+| gdb | 15.0.50+ | `apt` |
+| gef | 2025-10-04+ | download em `/opt/.gdbinit-gef.py` |
+| python | 3.12.3+ | `apt` (padrão do Ubuntu 24.04) |
+| pwntools | 4.15+ | venv em `~/.venvs/cripto` |
+| pycryptodome | 3.21+ | venv em `~/.venvs/cripto` |
+| requests | 2.31+ | venv em `~/.venvs/cripto` |
+| ROPGadget | 7.6+ | venv em `~/.venvs/cripto` |
+| one_gadget | 1.10+ | `gem install one_gadget` |
+| Wireshark / tshark | 4.2.2+ | `apt` (captura sem root via grupo `wireshark`) |
+| Burp Suite Community | 2026.2.3+ | download do instalador oficial (execução **manual**) |
+| IDA Free | 9.2+ | **manual** — exige conta na Hex-Rays |
+
+#### Por que uma venv?
+
+O Ubuntu 24.04 marca o Python do sistema como *externally managed* (PEP 668),
+então `pip install pwntools` falha direto no sistema. O script cria uma venv
+dedicada em `~/.venvs/cripto` e cria links dos executáveis (`pwn`, `ROPgadget`,
+`checksec`) em `~/.local/bin`, de forma que eles funcionam no terminal sem
+precisar ativar nada.
+
+Para rodar **scripts Python** com as bibliotecas da disciplina:
+
+```bash
+cripto-python meu_exploit.py     # atalho criado no ~/.bashrc
+# ou
+cripto-activate                  # ativa a venv no shell atual
+```
+
+#### Etapas manuais
+
+- **IDA Free 9.2+** — baixe em <https://hex-rays.com/ida-free> (precisa de conta).
+- **Burp Suite Community** — o script baixa o instalador para
+  `~/Downloads/burpsuite-community-linux.sh`, mas o instalador é **gráfico**:
+  rode-o com o WSLg (Windows 11) ou um servidor X ativo.
+- **Ativar o GEF** — edite `~/.gdbinit` e descomente `source /opt/.gdbinit-gef.py`.
+- **Wireshark no WSL** — a interface gráfica precisa de WSLg; o `tshark`
+  (linha de comando) funciona sempre.
+- Feche e reabra o WSL depois da instalação, para aplicar o `PATH`, os aliases
+  e o grupo `wireshark`.
+
+#### Moodle da disciplina
+
+- Endereço: <https://idp-moodle.online>
+- Disciplina: **Criptografia e Segurança - 2026/2**
+- Chave de inscrição: `cs-cs-2026-02-cs-cs`
+
+---
+
+### 4. No Ubuntu (WSL) — ambiente de desenvolvimento completo
 
 Instalar **tudo** (Python, Node, Docker e todas as linguagens/frameworks):
 
